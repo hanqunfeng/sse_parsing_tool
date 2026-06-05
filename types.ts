@@ -73,8 +73,3 @@ export interface ChatHistory {
   tools?: NormalizedTool[];
   usage?: any;
 }
-
-// Legacy aliases
-export type ClaudePart = ChatPart;
-export type ClaudeMessage = ChatMessage;
-export type ClaudeChatHistory = ChatHistory;

@@ -22,7 +22,7 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 
 ## Architecture
 
-- **`App.tsx`** — Root component. Owns state (input, events, message, chat history, view mode, provider). Auto-parses on input change. Two modes: `sse` and `dialogue`. Provider dropdown for example loading; auto-detection on paste.
+- **`App.tsx`** — Root component. Owns state (input, events, message, chat history, view mode, example template). Auto-parses on input change. Two modes: `sse` and `dialogue`. Example-template dropdown for loading samples; auto-detection on paste.
 - **`services/sseParser.ts`** — `parseRawSSE()`: tokenizes raw SSE text into `SSEEvent[]`. Supports multiline `data:` payloads and `data: [DONE]`.
 - **`services/formatDetector.ts`** — `detectSSEProvider()` / `detectDialogueProvider()`: auto-identify Anthropic vs OpenAI.
 - **`services/anthropicReconstructor.ts`** — `reconstructAnthropicMessage()`: Anthropic SSE → `MessageState`.
@@ -49,4 +49,3 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 
 - OpenAI `reasoning_content` is normalized to `thinking` content blocks.
 - OpenAI dialogue `tool_calls` → `tool_use` parts; `role: tool` → `tool_result` parts.
-- Legacy type aliases `ClaudeChatHistory`, `ClaudePart`, `ClaudeMessage` remain for compatibility.

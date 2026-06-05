@@ -54,7 +54,7 @@ npm run dev    # http://localhost:3000
 ## 使用方式
 
 1. 在左侧文本框粘贴 SSE 流或对话 JSON
-2. 选择 Provider 下拉（anthropic / openai），点击加载对应示例
+2. 选择**示例模板**（anthropic / openai），点击加载对应示例
 3. 查看顶部检测标签确认模式与 Provider
 4. 左侧查看事件序列（SSE 模式），右侧查看可视化重建
 
@@ -108,21 +108,51 @@ data: [DONE]
 ## 项目结构
 
 ```
-├── App.tsx                         # 根组件，自动解析与 Provider 切换
-├── types.ts                        # 类型定义（Provider、ChatHistory、MessageState）
-├── examples/                       # 按 Provider 分层的示例文件
-├── services/
-│   ├── sseParser.ts                # 通用 SSE 分词（含多行 data）
-│   ├── formatDetector.ts           # Provider 自动检测
-│   ├── anthropicReconstructor.ts   # Anthropic SSE 重建
-│   ├── openaiReconstructor.ts      # OpenAI SSE 重建（含 reasoning_content）
-│   ├── reconstructMessage.ts       # 重建分发入口
-│   └── dialogueNormalizer.ts       # 对话 JSON 归一化
-└── components/
-    ├── EventItem.tsx
-    ├── MessagePreview.tsx
-    └── ChatHistory.tsx
+sse_parsing_tool/
+├── App.tsx                         # 根组件：输入状态、自动解析、示例模板、双栏布局
+├── index.tsx                       # React 入口，挂载 App 到 #root
+├── index.html                      # HTML 壳；CDN 引入 Tailwind、字体；引用 /index.tsx
+├── types.ts                        # 全局类型：Provider、SSEEvent、MessageState、ChatHistory 等
+├── vite-env.d.ts                   # Vite 类型声明（支持 import '*.txt?raw'）
+├── vite.config.ts                  # Vite 配置：端口 3000、React 插件、@ 路径别名
+├── tsconfig.json                   # TypeScript 编译选项
+├── package.json                    # 依赖与 npm scripts
+├── package-lock.json               # 依赖锁定文件
+│
+├── examples/                       # 示例模板（由顶部「示例模板」下拉选择加载）
+│   ├── index.ts                    # 注册各 Provider 示例，导出 getProviderExamples()
+│   ├── anthropic/
+│   │   ├── sse.txt                 # Anthropic SSE 流示例
+│   │   └── dialogue.json           # Anthropic 对话 JSON 示例（顶层 system + tools）
+│   └── openai/
+│       ├── sse.txt                 # OpenAI SSE 流示例（chat.completion.chunk）
+│       └── dialogue.json           # OpenAI 对话 JSON 示例（system 在 messages 内）
+│
+├── services/                       # 解析与归一化（与 UI 解耦）
+│   ├── sseParser.ts                # parseRawSSE()：SSE 文本 → 事件列表（含多行 data）
+│   ├── formatDetector.ts           # detectSSEProvider() / detectDialogueProvider()
+│   ├── anthropicReconstructor.ts   # Anthropic SSE 事件 → MessageState
+│   ├── openaiReconstructor.ts      # OpenAI SSE 事件 → MessageState（含 reasoning_content）
+│   ├── reconstructMessage.ts       # 按 Provider 分发到上述 reconstructor
+│   └── dialogueNormalizer.ts       # 对话 JSON → 统一 ChatHistory
+│
+├── components/
+│   ├── EventItem.tsx               # 左侧 SSE 事件手风琴（单条展开查看 JSON）
+│   ├── MessagePreview.tsx          # 右侧 SSE 重建预览（blocks、token 用量）
+│   └── ChatHistory.tsx             # 右侧对话 JSON 聊天视图（messages、system、tools）
+│
+├── README.md                       # 本文件
+└── AGENTS.md                       # AI 代理开发约定
 ```
+
+### 数据流
+
+```
+粘贴输入 → JSON? → dialogueNormalizer → ChatHistory → ChatHistory.tsx
+         → 文本  → sseParser → formatDetector → reconstructMessage → MessagePreview.tsx
+```
+
+`.codegraph/`、`.gitignore`、`dist/`（构建产物）等为工具/生成目录，未在上树中展开。
 
 ## 技术栈
 
