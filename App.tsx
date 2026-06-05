@@ -1,12 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import MessagePreview from './components/MessagePreview';
 import ChatHistoryView from './components/ChatHistory';
 import Header from './components/Header';
+import InputEditorModal from './components/InputEditorModal';
 import { useInspector } from './hooks/useInspector';
 import EventList from './components/EventList';
 
 const App: React.FC = () => {
+  const [isInputModalOpen, setIsInputModalOpen] = useState(false);
   const {
     inputText,
     setInputText,
@@ -38,11 +40,23 @@ const App: React.FC = () => {
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
         <div className="w-full md:w-1/3 flex flex-col border-r border-slate-200 h-[calc(100vh-73px)]">
           <div className="p-4 bg-slate-50 border-b border-slate-200">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex justify-between items-center">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex justify-between items-center gap-2">
               <span>RAW DATA INPUT</span>
-              <span className={`px-2 py-0.5 rounded ${viewMode === 'sse' ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                Detected: {detectionLabel}
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsInputModalOpen(true)}
+                  aria-label="Expand input editor"
+                  className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md border border-transparent hover:border-indigo-100 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                </button>
+                <span className={`px-2 py-0.5 rounded ${viewMode === 'sse' ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                  Detected: {detectionLabel}
+                </span>
+              </div>
             </div>
             <textarea
               value={inputText}
@@ -90,6 +104,15 @@ const App: React.FC = () => {
           </div>
         </div>
       </main>
+
+      <InputEditorModal
+        open={isInputModalOpen}
+        value={inputText}
+        onChange={setInputText}
+        onClose={() => setIsInputModalOpen(false)}
+        detectionLabel={detectionLabel}
+        parseError={parseError}
+      />
     </div>
   );
 };
