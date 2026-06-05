@@ -6,11 +6,19 @@ const SSE_FIELD_PREFIXES = ['event:', 'data:', 'id:', 'retry:'];
 const isSSEFieldLine = (line: string): boolean =>
   SSE_FIELD_PREFIXES.some((prefix) => line.startsWith(prefix));
 
-const flushEvent = (currentEvent: Partial<SSEEvent>): SSEEvent | null => {
+const buildStableEventId = (currentEvent: Partial<SSEEvent>, eventIndex: number): string => {
+  const sseId = currentEvent.id?.trim();
+  const eventName = (currentEvent.event || 'message').trim() || 'message';
+  if (sseId) return `id:${sseId}:${eventIndex}`;
+  return `${eventName}:${eventIndex}`;
+};
+
+const flushEvent = (currentEvent: Partial<SSEEvent>, eventIndex: number): SSEEvent | null => {
   if (!currentEvent.event && !currentEvent.data) return null;
 
   const data = currentEvent.data?.trim() ?? '';
   let parsedData: any = undefined;
+  const stableId = buildStableEventId(currentEvent, eventIndex);
 
   if (data === '[DONE]') {
     return {
@@ -18,7 +26,7 @@ const flushEvent = (currentEvent: Partial<SSEEvent>): SSEEvent | null => {
       data,
       parsedData: undefined,
       timestamp: Date.now(),
-      id: Math.random().toString(36).substring(7),
+      id: stableId,
     };
   }
 
@@ -35,7 +43,7 @@ const flushEvent = (currentEvent: Partial<SSEEvent>): SSEEvent | null => {
     data,
     parsedData,
     timestamp: Date.now(),
-    id: Math.random().toString(36).substring(7),
+    id: stableId,
   };
 };
 
@@ -46,6 +54,7 @@ export const parseRawSSE = (rawText: string): SSEEvent[] => {
   let currentEvent: Partial<SSEEvent> = {};
   let inDataPayload = false;
   let started = false;
+  let eventIndex = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -57,10 +66,11 @@ export const parseRawSSE = (rawText: string): SSEEvent[] => {
     if (!started) continue;
 
     if (line === '') {
-      const flushed = flushEvent(currentEvent);
+      const flushed = flushEvent(currentEvent, eventIndex);
       if (flushed) events.push(flushed);
       currentEvent = {};
       inDataPayload = false;
+      eventIndex++;
       continue;
     }
 
@@ -83,7 +93,7 @@ export const parseRawSSE = (rawText: string): SSEEvent[] => {
     }
   }
 
-  const flushed = flushEvent(currentEvent);
+  const flushed = flushEvent(currentEvent, eventIndex);
   if (flushed) events.push(flushed);
 
   return events;

@@ -1,10 +1,10 @@
 
 import React from 'react';
-import EventItem from './components/EventItem';
 import MessagePreview from './components/MessagePreview';
 import ChatHistoryView from './components/ChatHistory';
 import Header from './components/Header';
 import { useInspector } from './hooks/useInspector';
+import EventList from './components/EventList';
 
 const App: React.FC = () => {
   const {
@@ -60,12 +60,7 @@ const App: React.FC = () => {
           <div className="flex-1 flex flex-col overflow-hidden">
             {viewMode === 'sse' ? (
               <>
-                <div className="px-4 py-3 bg-white border-b border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Event Sequence ({events.length})</span>
-                </div>
-                <div className="flex-1 overflow-y-auto bg-white">
-                  {events.map((ev) => <EventItem key={ev.id} event={ev} />)}
-                </div>
+                <EventList events={events} />
               </>
             ) : (
               <div className="flex-1 flex flex-col bg-slate-100 p-8 items-center justify-center text-center space-y-4">

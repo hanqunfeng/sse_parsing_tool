@@ -14,6 +14,7 @@ export const useInspector = () => {
   const [messageState, setMessageState] = useState<MessageState>({ blocks: [] });
   const [chatHistory, setChatHistory] = useState<ChatHistory | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
+  const debounceTimerRef = useRef<number | null>(null);
 
   const applyInspectResult = useCallback((result: ReturnType<typeof inspectInput>) => {
     switch (result.kind) {
@@ -53,7 +54,22 @@ export const useInspector = () => {
   }, []);
 
   useEffect(() => {
-    applyInspectResult(inspectInput(inputText));
+    if (debounceTimerRef.current) {
+      window.clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
+    debounceTimerRef.current = window.setTimeout(() => {
+      applyInspectResult(inspectInput(inputText));
+      debounceTimerRef.current = null;
+    }, 220);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
   }, [inputText, applyInspectResult]);
 
   const loadExample = useCallback((type: 'sse' | 'dialogue') => {
@@ -61,11 +77,21 @@ export const useInspector = () => {
     const examples = getProviderExamples(provider);
     if (examples) {
       setExampleTemplate(provider);
-      setInputText(type === 'sse' ? examples.sse : examples.dialogue);
+      const nextText = type === 'sse' ? examples.sse : examples.dialogue;
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      setInputText(nextText);
+      applyInspectResult(inspectInput(nextText));
     }
-  }, [exampleTemplate]);
+  }, [exampleTemplate, applyInspectResult]);
 
   const clear = useCallback(() => {
+    if (debounceTimerRef.current) {
+      window.clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
     setInputText('');
     setEvents([]);
     setChatHistory(null);

@@ -16,18 +16,26 @@ export type InspectResult =
 const PARSE_ERROR = '解析失败：输入内容格式异常，请检查是否为完整 JSON 或 SSE 文本。';
 
 export const inspectInput = (text: string): InspectResult => {
-  if (!text.trim()) {
+  const trimmed = text.trim();
+  if (!trimmed) {
     return { kind: 'empty' };
   }
 
-  try {
-    const json = JSON.parse(text);
-    const normalized = normalizeDialogue(json);
-    if (normalized) {
-      return { kind: 'dialogue', chatHistory: normalized, provider: normalized.provider };
+  const leading = text.replace(/^\s+/, '');
+  const looksLikeSSE = leading.startsWith('event:') || leading.startsWith('data:');
+  const firstNonSpace = leading[0];
+  const looksLikeJSON = firstNonSpace === '{' || firstNonSpace === '[';
+
+  if (!looksLikeSSE && looksLikeJSON) {
+    try {
+      const json = JSON.parse(text);
+      const normalized = normalizeDialogue(json);
+      if (normalized) {
+        return { kind: 'dialogue', chatHistory: normalized, provider: normalized.provider };
+      }
+    } catch {
+      // Not JSON dialogue — fall through to SSE
     }
-  } catch {
-    // Not JSON — try SSE parsing
   }
 
   try {

@@ -18,7 +18,11 @@ const PartRenderer: React.FC<{ part: ChatPart; role: string; provider: string }>
 
       return (
         <div className={`text-sm leading-relaxed mb-3 ${textColorClass}`}>
-          <div dangerouslySetInnerHTML={{ __html: part.text?.replace(/\n/g, '<br/>') || '' }} />
+          {isStdout ? (
+            <pre className="whitespace-pre-wrap break-words">{part.text || ''}</pre>
+          ) : (
+            <div className="whitespace-pre-wrap break-words">{part.text || ''}</div>
+          )}
         </div>
       );
     }
