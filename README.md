@@ -140,7 +140,9 @@ data: [DONE]
 
 ```
 sse_parsing_tool/
-├── App.tsx                         # 根组件：输入状态、自动解析、示例模板、双栏布局
+├── App.tsx                         # 根组件：组合布局，连接 hook 与子组件
+├── hooks/
+│   └── useInspector.ts             # 输入状态、自动解析、示例加载（React 副作用）
 ├── index.tsx                       # React 入口，挂载 App 到 #root
 ├── index.html                      # HTML 壳；CDN 引入 Tailwind、字体；引用 /index.tsx
 ├── types.ts                        # 全局类型：Provider、SSEEvent、MessageState、ChatHistory 等
@@ -165,9 +167,11 @@ sse_parsing_tool/
 │   ├── anthropicReconstructor.ts   # Anthropic SSE 事件 → MessageState
 │   ├── openaiReconstructor.ts      # OpenAI SSE 事件 → MessageState（含 reasoning_content）
 │   ├── reconstructMessage.ts       # 按 Provider 分发到上述 reconstructor
-│   └── dialogueNormalizer.ts       # 对话 JSON → 统一 ChatHistory
+│   ├── dialogueNormalizer.ts       # 对话 JSON → 统一 ChatHistory
+│   └── inspectInput.ts             # 编排解析流程（纯函数，无 React）
 │
 ├── components/
+│   ├── Header.tsx                  # 顶栏：标题、示例模板、加载/清空按钮
 │   ├── EventItem.tsx               # 左侧 SSE 事件手风琴（单条展开查看 JSON）
 │   ├── MessagePreview.tsx          # 右侧 SSE 重建预览（blocks、token 用量）
 │   └── ChatHistory.tsx             # 右侧对话 JSON 聊天视图（messages、system、tools）
@@ -179,8 +183,7 @@ sse_parsing_tool/
 ### 数据流
 
 ```
-粘贴输入 → JSON? → dialogueNormalizer → ChatHistory → ChatHistory.tsx
-         → 文本  → sseParser → formatDetector → reconstructMessage → MessagePreview.tsx
+粘贴输入 → useInspector → inspectInput → services 层解析 → 更新 state → 各 UI 组件渲染
 ```
 
 `.codegraph/`、`.gitignore`、`dist/`（构建产物）等为工具/生成目录，未在上树中展开。

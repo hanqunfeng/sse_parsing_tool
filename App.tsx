@@ -1,140 +1,39 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { parseRawSSE } from './services/sseParser';
-import { reconstructMessage } from './services/reconstructMessage';
-import { normalizeDialogue } from './services/dialogueNormalizer';
-import { detectSSEProvider } from './services/formatDetector';
-import { SSEEvent, MessageState, ChatHistory, Provider } from './types';
+import React from 'react';
 import EventItem from './components/EventItem';
 import MessagePreview from './components/MessagePreview';
 import ChatHistoryView from './components/ChatHistory';
-import { DEFAULT_PROVIDER, getProviderExamples, PROVIDER_LIST, Provider as ExampleProvider } from './examples';
+import Header from './components/Header';
+import { useInspector } from './hooks/useInspector';
 
 const App: React.FC = () => {
-  const [inputText, setInputText] = useState('');
-  const [exampleTemplate, setExampleTemplate] = useState<ExampleProvider>(DEFAULT_PROVIDER);
-  const exampleSelectRef = useRef<HTMLSelectElement>(null);
-  const [detectedProvider, setDetectedProvider] = useState<Provider | null>(null);
-  const [viewMode, setViewMode] = useState<'sse' | 'dialogue'>('sse');
-  const [events, setEvents] = useState<SSEEvent[]>([]);
-  const [messageState, setMessageState] = useState<MessageState>({ blocks: [] });
-  const [chatHistory, setChatHistory] = useState<ChatHistory | null>(null);
-  const [parseError, setParseError] = useState<string | null>(null);
-
-  const handleParse = useCallback(() => {
-    if (!inputText.trim()) {
-      setEvents([]);
-      setMessageState({ blocks: [] });
-      setChatHistory(null);
-      setDetectedProvider(null);
-      setParseError(null);
-      return;
-    }
-
-    try {
-      const json = JSON.parse(inputText);
-      const normalized = normalizeDialogue(json);
-      if (normalized) {
-        setViewMode('dialogue');
-        setChatHistory(normalized);
-        setDetectedProvider(normalized.provider);
-        setExampleTemplate(normalized.provider);
-        setEvents([]);
-        setMessageState({ blocks: [] });
-        setParseError(null);
-        return;
-      }
-    } catch {
-      // Not JSON — try SSE parsing
-    }
-
-    try {
-      const parsed = parseRawSSE(inputText);
-      const provider = detectSSEProvider(parsed);
-      const reconstructed = reconstructMessage(parsed, provider);
-
-      setViewMode('sse');
-      setChatHistory(null);
-      setEvents(parsed);
-      setMessageState(reconstructed);
-      setDetectedProvider(provider);
-      setExampleTemplate(provider);
-      setParseError(null);
-    } catch {
-      setEvents([]);
-      setMessageState({ blocks: [] });
-      setChatHistory(null);
-      setDetectedProvider(null);
-      setParseError('解析失败：输入内容格式异常，请检查是否为完整 JSON 或 SSE 文本。');
-    }
-  }, [inputText]);
-
-  useEffect(() => {
-    handleParse();
-  }, [handleParse]);
-
-  const loadExample = (type: 'sse' | 'dialogue') => {
-    const provider = (exampleSelectRef.current?.value ?? exampleTemplate) as ExampleProvider;
-    const examples = getProviderExamples(provider);
-    if (examples) {
-      setExampleTemplate(provider);
-      setInputText(type === 'sse' ? examples.sse : examples.dialogue);
-    }
-  };
-
-  const detectionLabel = detectedProvider
-    ? `${viewMode.toUpperCase()} · ${detectedProvider.toUpperCase()}`
-    : viewMode.toUpperCase();
+  const {
+    inputText,
+    setInputText,
+    exampleTemplate,
+    setExampleTemplate,
+    exampleSelectRef,
+    detectedProvider,
+    viewMode,
+    events,
+    messageState,
+    chatHistory,
+    parseError,
+    detectionLabel,
+    loadExample,
+    clear,
+  } = useInspector();
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-800">AI Protocol Inspector</h1>
-            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">SSE & Dialogue Stream Analyzer</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="font-semibold whitespace-nowrap">示例模板</span>
-            <select
-              ref={exampleSelectRef}
-              value={exampleTemplate}
-              onChange={(e) => setExampleTemplate(e.target.value as ExampleProvider)}
-              className="px-3 py-2 text-xs font-semibold text-slate-700 bg-white rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
-            >
-              {PROVIDER_LIST.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </label>
-          <button
-            onClick={() => loadExample('sse')}
-            className="px-4 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-indigo-100"
-          >
-            Load SSE Example
-          </button>
-          <button
-            onClick={() => loadExample('dialogue')}
-            className="px-4 py-2 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-emerald-100"
-          >
-            Load Dialogue Example
-          </button>
-          <button
-            onClick={() => { setInputText(''); setEvents([]); setChatHistory(null); setDetectedProvider(null); }}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200"
-          >
-            Clear
-          </button>
-        </div>
-      </header>
+      <Header
+        exampleTemplate={exampleTemplate}
+        exampleSelectRef={exampleSelectRef}
+        onExampleTemplateChange={setExampleTemplate}
+        onLoadSseExample={() => loadExample('sse')}
+        onLoadDialogueExample={() => loadExample('dialogue')}
+        onClear={clear}
+      />
 
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
         <div className="w-full md:w-1/3 flex flex-col border-r border-slate-200 h-[calc(100vh-73px)]">

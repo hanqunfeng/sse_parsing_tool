@@ -22,7 +22,10 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 
 ## Architecture
 
-- **`App.tsx`** — Root component. Owns state (input, events, message, chat history, view mode, example template). Auto-parses on input change. Two modes: `sse` and `dialogue`. Example-template dropdown for loading samples; auto-detection on paste.
+- **`App.tsx`** — Root layout; wires `useInspector` hook to `Header` and main panes.
+- **`hooks/useInspector.ts`** — State, auto-parse on input change, example loading, clear.
+- **`services/inspectInput.ts`** — Pure parse orchestration (JSON → dialogue, else SSE); no React.
+- **`components/Header.tsx`** — Top bar: title, example-template select, load/clear buttons.
 - **`services/sseParser.ts`** — `parseRawSSE()`: tokenizes raw SSE text into `SSEEvent[]`. Supports multiline `data:` payloads and `data: [DONE]`.
 - **`services/formatDetector.ts`** — `detectSSEProvider()` / `detectDialogueProvider()`: auto-identify Anthropic vs OpenAI.
 - **`services/anthropicReconstructor.ts`** — `reconstructAnthropicMessage()`: Anthropic SSE → `MessageState`.
