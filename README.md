@@ -90,6 +90,37 @@ data: {
 data: [DONE]
 ```
 
+**Anthropic 对话 JSON：**
+
+```json
+{
+  "model": "claude-haiku-4-5-20251001",
+  "system": [
+    { "type": "text", "text": "You are Claude, a coding assistant..." }
+  ],
+  "tools": [
+    { "name": "Read", "description": "...", "input_schema": { "type": "object", "properties": {} } }
+  ],
+  "messages": [
+    { "role": "user", "content": [{ "type": "text", "text": "hello" }] },
+    {
+      "role": "assistant",
+      "content": [
+        { "type": "thinking", "thinking": "..." },
+        { "type": "text", "text": "我先读取文件..." },
+        { "type": "tool_use", "id": "toolu_xxx", "name": "Read", "input": { "file_path": "..." } }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        { "type": "tool_result", "tool_use_id": "toolu_xxx", "content": "...", "is_error": true }
+      ]
+    }
+  ]
+}
+```
+
 **OpenAI 对话 JSON：**
 
 ```json
