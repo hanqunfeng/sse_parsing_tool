@@ -1,4 +1,6 @@
 
+export type Provider = 'anthropic' | 'openai';
+
 export interface SSEEvent {
   event: string;
   data: string;
@@ -17,21 +19,24 @@ export interface ContentBlock {
   is_error?: boolean;
 }
 
+export interface TokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
+  reasoning_tokens?: number;
+}
+
 export interface MessageState {
+  provider?: Provider;
   model?: string;
   role?: string;
   blocks: ContentBlock[];
-  usage?: {
-    input_tokens: number;
-    output_tokens: number;
-    cache_read_input_tokens?: number;
-    cache_creation_input_tokens?: number;
-  };
+  usage?: TokenUsage;
   stop_reason?: string;
 }
 
-// New types for Dialogue History (Full HTTP JSON)
-export interface ClaudePart {
+export interface ChatPart {
   type: string;
   text?: string;
   thinking?: string;
@@ -44,15 +49,32 @@ export interface ClaudePart {
   tool_use_id?: string;
 }
 
-export interface ClaudeMessage {
-  role: 'user' | 'assistant';
-  content: ClaudePart[];
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'tool';
+  content: ChatPart[];
 }
 
-export interface ClaudeChatHistory {
+export interface NormalizedSystemBlock {
+  type: string;
+  text: string;
+}
+
+export interface NormalizedTool {
+  name: string;
+  description?: string;
+  schema?: any;
+}
+
+export interface ChatHistory {
+  provider: Provider;
   model: string;
-  messages: ClaudeMessage[];
-  system?: any[];
-  tools?: any[];
+  messages: ChatMessage[];
+  system?: NormalizedSystemBlock[];
+  tools?: NormalizedTool[];
   usage?: any;
 }
+
+// Legacy aliases
+export type ClaudePart = ChatPart;
+export type ClaudeMessage = ChatMessage;
+export type ClaudeChatHistory = ChatHistory;

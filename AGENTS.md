@@ -1,6 +1,6 @@
 # SSE Stream Inspector
 
-A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) streams — optimized for Claude-style model outputs (thinking blocks, tool calls, dialogue history).
+A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) streams — supports **Anthropic** and **OpenAI Chat Completions** formats (thinking/reasoning blocks, tool calls, dialogue history).
 
 ## Project
 
@@ -8,7 +8,7 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 - **Styling:** Tailwind CSS via CDN (no PostCSS/config file; use only inline utility classes)
 - **Entry:** `index.tsx` → `App.tsx`
 - **Type definitions:** `types.ts`
-- **SSE parser service:** `services/sseParser.ts`
+- **Examples:** `examples/{anthropic,openai}/` — per-provider `sse.txt` and `dialogue.json`
 - **No test framework** — no `vitest`, `jest`, or `playwright` configured
 
 ## Commands
@@ -22,12 +22,17 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 
 ## Architecture
 
-- **`App.tsx`** — Root component. Owns all state (input text, events, parsed message, view mode). Auto-parses on input change via `useEffect`. Two modes: `sse` (for raw SSE streams) and `dialogue` (for full Claude HTTP JSON).
-- **`services/sseParser.ts`** — Exports `parseRawSSE()` (tokenizes raw SSE text into `SSEEvent[]`) and `reconstructMessage()` (assembles events into a `MessageState` with content blocks, usage, stop reason).
-- **`types.ts`** — Interfaces: `SSEEvent`, `ContentBlock`, `MessageState`, `ClaudePart`, `ClaudeMessage`, `ClaudeChatHistory`.
-- **`components/EventItem.tsx`** — Accordion display for a single parsed SSE event. Color-coded by event type.
-- **`components/MessagePreview.tsx`** — Visual reconstruction of the SSE stream into structured content blocks (thinking, text, tool_use) with token usage.
-- **`components/ChatHistory.tsx`** — Chat-like UI for full Claude dialogue history JSON. Renders turns, thinking blocks, tool calls, results, system instructions, and tool definitions.
+- **`App.tsx`** — Root component. Owns state (input, events, message, chat history, view mode, provider). Auto-parses on input change. Two modes: `sse` and `dialogue`. Provider dropdown for example loading; auto-detection on paste.
+- **`services/sseParser.ts`** — `parseRawSSE()`: tokenizes raw SSE text into `SSEEvent[]`. Supports multiline `data:` payloads and `data: [DONE]`.
+- **`services/formatDetector.ts`** — `detectSSEProvider()` / `detectDialogueProvider()`: auto-identify Anthropic vs OpenAI.
+- **`services/anthropicReconstructor.ts`** — `reconstructAnthropicMessage()`: Anthropic SSE → `MessageState`.
+- **`services/openaiReconstructor.ts`** — `reconstructOpenAIMessage()`: OpenAI SSE → `MessageState` (reasoning_content, content, tool_calls, usage).
+- **`services/reconstructMessage.ts`** — Dispatches to provider-specific reconstructor.
+- **`services/dialogueNormalizer.ts`** — `normalizeDialogue()`: JSON → unified `ChatHistory` with provider-specific adapters.
+- **`types.ts`** — `Provider`, `SSEEvent`, `ContentBlock`, `MessageState`, `ChatHistory`, `ChatPart`, etc.
+- **`components/EventItem.tsx`** — Accordion for a single SSE event; `chunk` label for OpenAI.
+- **`components/MessagePreview.tsx`** — SSE reconstruction preview with provider badge and reasoning token usage.
+- **`components/ChatHistory.tsx`** — Chat UI for dialogue JSON; supports `role: tool`, normalized system/tools.
 
 ## Conventions
 
@@ -37,8 +42,11 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 - **Styling:** Tailwind inline classes only — no CSS modules, no styled-components.
 - **Error handling:** Try/catch around JSON.parse; fall back gracefully. Manual error state (`parseError`) shown in UI.
 - **State management:** Local `useState` + `useCallback` in App — no external state library.
-- **SSE parsing:** Multi-line data concatenation supported; HTTP headers automatically skipped.
+- **Normalization:** Provider-specific parsers produce unified internal models; UI components stay provider-agnostic.
+- **SSE parsing:** Multiline data concatenation; HTTP headers automatically skipped.
 
 ## Notes
 
-(Add project-specific notes as needed.)
+- OpenAI `reasoning_content` is normalized to `thinking` content blocks.
+- OpenAI dialogue `tool_calls` → `tool_use` parts; `role: tool` → `tool_result` parts.
+- Legacy type aliases `ClaudeChatHistory`, `ClaudePart`, `ClaudeMessage` remain for compatibility.

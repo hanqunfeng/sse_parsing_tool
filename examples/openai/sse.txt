@@ -1,0 +1,92 @@
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+
+data: {
+  "object":"chat.completion.chunk",
+  "model":"deepseek-v4-pro",
+  "choices":[
+    {
+      "delta":{
+        "role":"assistant",
+        "reasoning_content":""
+      }
+    }
+  ]
+}
+
+data: {
+  "choices":[
+    {
+      "delta":{
+        "reasoning_content":"The user is greeting me in English."
+      }
+    }
+  ]
+}
+
+data: {
+  "choices":[
+    {
+      "delta":{
+        "reasoning_content":" Let me respond in English."
+      }
+    }
+  ]
+}
+
+data: {
+  "choices":[
+    {
+      "delta":{
+        "reasoning_content":" I should ask how I can help."
+      }
+    }
+  ]
+}
+
+data: {
+  "choices":[
+    {
+      "delta":{
+        "content":"Hello!"
+      }
+    }
+  ]
+}
+
+data: {
+  "choices":[
+    {
+      "delta":{
+        "content":" How can I help you today?"
+      }
+    }
+  ]
+}
+
+data: {
+  "choices":[
+    {
+      "delta":{
+        "content":" I'm ready to assist with coding tasks."
+      }
+    }
+  ]
+}
+
+data: {
+  "choices":[
+    {
+      "delta":{},
+      "finish_reason":"stop"
+    }
+  ],
+  "usage":{
+    "prompt_tokens":8593,
+    "completion_tokens":59,
+    "reasoning_tokens":21,
+    "cached_tokens":256
+  }
+}
+
+data: [DONE]

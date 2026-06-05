@@ -1,0 +1,99 @@
+{
+  "model": "claude-haiku-4-5-20251001",
+  "system": [
+    {
+      "type": "text",
+      "text": "You are Claude, an AI assistant integrated into a code editor. You help users understand, debug, and fix code in their projects.\n\nWhen the user references a file with @path, treat it as a hint about which file they care about. Prefer reading files before making assumptions about their contents."
+    },
+    {
+      "type": "text",
+      "text": "Answer in the same language the user writes in. Be concise and precise when explaining errors and fixes.",
+      "cache_control": { "type": "ephemeral" }
+    }
+  ],
+  "tools": [
+    {
+      "name": "Read",
+      "description": "Reads a file from the local filesystem. You can optionally specify a line offset and limit, but it's recommended to read the whole file by not providing these parameters.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "Absolute path to the file to read"
+          },
+          "offset": {
+            "type": "number",
+            "description": "Line number to start reading from (1-indexed)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of lines to read"
+          }
+        },
+        "required": ["file_path"]
+      }
+    },
+    {
+      "name": "Grep",
+      "description": "Search for a pattern in files using ripgrep. Supports regex, glob filters, and context lines.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Regular expression pattern to search for"
+          },
+          "path": {
+            "type": "string",
+            "description": "File or directory to search in"
+          },
+          "glob": {
+            "type": "string",
+            "description": "Glob pattern to filter files (e.g. \"*.java\")"
+          }
+        },
+        "required": ["pattern"]
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "text", "text": "@src/Hello.java 有错误，告诉我原因，我应该怎么修复" }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "用户要求我检查 `/src/Hello.java` 文件中的错误。我需要先读取这个文件，看看具体是什么问题。",
+          "signature": "EtQCCkYICxgCKkBd7b7bG3Dstd88+eyZgO9gCMl3FJwOmhEKbg6QvMGXKm+CzZaR+KjZJGTJ3qkGk0mvV6YCFL8MKrF+T4CaycpOEgyezDUI1T"
+        },
+        {
+          "type": "text",
+          "text": "我先读取 `Hello.java` 文件，看看具体的错误内容。"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01X2snB1Lu3u4464Q3Zf8cqe",
+          "name": "Read",
+          "input": { "file_path": "/Users/tommy/temp/myProject/src/Hello.java" }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "content": "<tool_use_error>File does not exist.</tool_use_error>",
+          "is_error": true,
+          "tool_use_id": "toolu_01X2snB1Lu3u4464Q3Zf8cqe"
+        }
+      ]
+    }
+  ]
+}
