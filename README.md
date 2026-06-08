@@ -31,7 +31,8 @@
 
 ### 其他
 
-- 输入变更时**实时解析**
+- 输入变更时**实时解析**（约 220ms debounce）
+- 左侧文本框可**展开为全屏 CodeMirror 编辑器**，便于粘贴与编辑大段 SSE / JSON
 - 顶部**示例模板**下拉（仅控制加载哪套示例）+ 一键加载；粘贴内容仍自动识别 Provider
 - 解析失败时显示错误提示
 
@@ -50,13 +51,16 @@ npm run dev    # http://localhost:3000
 | `npm run dev` | 开发模式，监听 `0.0.0.0:3000` |
 | `npm run build` | 生产构建，输出到 `dist/` |
 | `npm run preview` | 预览生产构建 |
+| `npm test` | 运行 Vitest 单元测试（`tests/services/`） |
+| `npm run test:watch` | Vitest 监听模式 |
+| `npm run typecheck` | TypeScript 类型检查（`tsc --noEmit`） |
 
 ## 使用方式
 
-1. 在左侧文本框粘贴 SSE 流或对话 JSON
+1. 在左侧文本框粘贴 SSE 流或对话 JSON（可点击展开按钮进入全屏编辑器）
 2. 选择**示例模板**（anthropic / openai），点击加载对应示例
 3. 查看顶部检测标签确认模式与 Provider
-4. 左侧查看事件序列（SSE 模式），右侧查看可视化重建
+4. 左侧查看事件序列（SSE 模式，支持搜索/筛选），右侧查看可视化重建
 
 ### 示例目录
 
@@ -149,8 +153,10 @@ sse_parsing_tool/
 ├── vite-env.d.ts                   # Vite 类型声明（支持 import '*.txt?raw'）
 ├── vite.config.ts                  # Vite 配置：端口 3000、React 插件、@ 路径别名
 ├── tsconfig.json                   # TypeScript 编译选项
+├── vitest.config.ts                # Vitest 配置（Node 环境，匹配 **/*.test.ts）
 ├── package.json                    # 依赖与 npm scripts
 ├── package-lock.json               # 依赖锁定文件
+├── .gitignore                      # Git 忽略规则（node_modules、dist 等）
 │
 ├── examples/                       # 示例模板（由顶部「示例模板」下拉选择加载）
 │   ├── index.ts                    # 注册各 Provider 示例，导出 getProviderExamples()
@@ -172,9 +178,22 @@ sse_parsing_tool/
 │
 ├── components/
 │   ├── Header.tsx                  # 顶栏：标题、示例模板、加载/清空按钮
-│   ├── EventItem.tsx               # 左侧 SSE 事件手风琴（单条展开查看 JSON）
+│   ├── EventList.tsx               # 左侧 SSE 事件虚拟列表（搜索/筛选 + 详情面板）
+│   ├── InputEditorModal.tsx        # 全屏 CodeMirror 输入编辑器
 │   ├── MessagePreview.tsx          # 右侧 SSE 重建预览（blocks、token 用量）
 │   └── ChatHistory.tsx             # 右侧对话 JSON 聊天视图（messages、system、tools）
+│
+├── utils/
+│   ├── detectEditorLanguage.ts     # 根据输入推断 JSON / 纯文本（供编辑器高亮）
+│   └── formatJson.ts               # JSON 格式化（编辑器工具栏）
+│
+├── tests/
+│   └── services/                   # services 层单元测试（Vitest）
+│       ├── sseParser.test.ts
+│       ├── formatDetector.test.ts
+│       ├── anthropicReconstructor.test.ts
+│       ├── openaiReconstructor.test.ts
+│       └── dialogueNormalizer.test.ts
 │
 ├── README.md                       # 本文件
 └── AGENTS.md                       # AI 代理开发约定
@@ -186,16 +205,20 @@ sse_parsing_tool/
 粘贴输入 → useInspector → inspectInput → services 层解析 → 更新 state → 各 UI 组件渲染
 ```
 
-`.codegraph/`、`.gitignore`、`dist/`（构建产物）等为工具/生成目录，未在上树中展开。
+`.codegraph/`、`dist/`（构建产物）等工具/生成目录未在上树中展开。
 
 ## 技术栈
 
 - **React 19** + **TypeScript** + **Vite 6**
-- **Tailwind CSS**（CDN 引入）
-- 本地 `useState` + `useCallback` 状态管理
+- **Tailwind CSS**（CDN 引入，`index.html`；生产构建仍依赖运行时 CDN）
+- **CodeMirror 6**（`@uiw/react-codemirror`）— 全屏输入编辑器
+- **react-window** — SSE 事件列表虚拟滚动
+- **Vitest 3** — `services/` 纯函数单元测试
+- 本地 `useState` + `useCallback`（`useInspector`）状态管理
 
 ## 开发说明
 
 - 核心策略：**归一化内部模型** — 各 Provider 的 parser/normalizer 将输入转为统一的 `ChatHistory` / `MessageState`
-- SSE 解析支持多行 `data:` 拼接与 `data: [DONE]` 终止标记
+- SSE 解析支持多行 `data:` 拼接、`data: [DONE]` 终止标记，以及跳过 HTTP 响应头（见 `sseParser.ts` 与对应测试）
+- 单元测试覆盖 `sseParser`、`formatDetector`、两个 reconstructor、`dialogueNormalizer`；`inspectInput` 编排层暂无测试
 - AI 代理开发约定见 [AGENTS.md](./AGENTS.md)

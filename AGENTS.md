@@ -9,7 +9,8 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 - **Entry:** `index.tsx` → `App.tsx`
 - **Type definitions:** `types.ts`
 - **Examples:** `examples/{anthropic,openai}/` — per-provider `sse.txt` and `dialogue.json`
-- **No test framework** — no `vitest`, `jest`, or `playwright` configured
+- **Testing:** Vitest 3 (`vitest.config.ts`); unit tests in `tests/services/` for `services/` pure functions (no Playwright / component tests)
+- **Editor:** CodeMirror 6 via `@uiw/react-codemirror` in expand modal; `react-window` virtualizes SSE event list
 
 ## Commands
 
@@ -19,13 +20,18 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 | `npm run dev` | Start dev server on `http://0.0.0.0:3000` |
 | `npm run build` | Production build to `dist/` |
 | `npm run preview` | Preview production build |
+| `npm test` | Run Vitest once (`tests/**/*.test.ts`) |
+| `npm run test:watch` | Vitest watch mode |
+| `npm run typecheck` | `tsc --noEmit` type check |
 
 ## Architecture
 
-- **`App.tsx`** — Root layout; wires `useInspector` hook to `Header` and main panes.
-- **`hooks/useInspector.ts`** — State, auto-parse on input change, example loading, clear.
+- **`App.tsx`** — Root layout; wires `useInspector` hook to `Header`, panes, and `InputEditorModal`.
+- **`hooks/useInspector.ts`** — State, debounced auto-parse (~220ms) on input change, example loading, clear.
 - **`services/inspectInput.ts`** — Pure parse orchestration (JSON → dialogue, else SSE); no React.
 - **`components/Header.tsx`** — Top bar: title, example-template select, load/clear buttons.
+- **`components/InputEditorModal.tsx`** — Full-screen CodeMirror editor for large pastes; shares `inputText` state with sidebar textarea.
+- **`components/EventList.tsx`** — Virtualized SSE event list (`react-window`); search/filter + detail panel.
 - **`services/sseParser.ts`** — `parseRawSSE()`: tokenizes raw SSE text into `SSEEvent[]`. Supports multiline `data:` payloads and `data: [DONE]`.
 - **`services/formatDetector.ts`** — `detectSSEProvider()` / `detectDialogueProvider()`: auto-identify Anthropic vs OpenAI.
 - **`services/anthropicReconstructor.ts`** — `reconstructAnthropicMessage()`: Anthropic SSE → `MessageState`.
@@ -33,9 +39,10 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 - **`services/reconstructMessage.ts`** — Dispatches to provider-specific reconstructor.
 - **`services/dialogueNormalizer.ts`** — `normalizeDialogue()`: JSON → unified `ChatHistory` with provider-specific adapters.
 - **`types.ts`** — `Provider`, `SSEEvent`, `ContentBlock`, `MessageState`, `ChatHistory`, `ChatPart`, etc.
-- **`components/EventItem.tsx`** — Accordion for a single SSE event; `chunk` label for OpenAI.
 - **`components/MessagePreview.tsx`** — SSE reconstruction preview with provider badge and reasoning token usage.
 - **`components/ChatHistory.tsx`** — Chat UI for dialogue JSON; supports `role: tool`, normalized system/tools.
+- **`utils/detectEditorLanguage.ts`** / **`utils/formatJson.ts`** — Editor language hint and JSON pretty-print for modal.
+- **`tests/services/*.test.ts`** — Unit tests for parsers, detectors, reconstructors, normalizer (`inspectInput` not yet covered).
 
 ## Conventions
 
@@ -44,7 +51,8 @@ A developer tool to parse, visualize, and reconstruct Server-Sent Events (SSE) s
 - **Naming:** PascalCase for components; camelCase for variables/functions.
 - **Styling:** Tailwind inline classes only — no CSS modules, no styled-components.
 - **Error handling:** Try/catch around JSON.parse; fall back gracefully. Manual error state (`parseError`) shown in UI.
-- **State management:** Local `useState` + `useCallback` in App — no external state library.
+- **State management:** Local `useState` + `useCallback` in `useInspector` — no external state library.
+- **Tests:** Add cases under `tests/services/`; run `npm test`. Prefer example fixtures from `examples/` where useful.
 - **Normalization:** Provider-specific parsers produce unified internal models; UI components stay provider-agnostic.
 - **SSE parsing:** Multiline data concatenation; HTTP headers automatically skipped.
 
