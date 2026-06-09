@@ -64,5 +64,28 @@ describe('services/formatDetector.detectDialogueProvider', () => {
     };
     expect(detectDialogueProvider(raw)).toBe('anthropic');
   });
+
+  it('Claude Code 请求：messages 含 role:system 但有 Anthropic 特征时仍识别为 Anthropic', () => {
+    const raw = {
+      system: [{ type: 'text', text: 'You are Claude Code' }],
+      tools: [{ name: 'Edit', description: 'edit', input_schema: { type: 'object' } }],
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'hi' }] },
+        { role: 'system', content: 'Called the Read tool...' },
+        {
+          role: 'assistant',
+          content: [
+            { type: 'thinking', thinking: 'plan' },
+            { type: 'tool_use', id: 'call_1', name: 'Edit', input: {} },
+          ],
+        },
+        {
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: 'call_1', content: 'ok' }],
+        },
+      ],
+    };
+    expect(detectDialogueProvider(raw)).toBe('anthropic');
+  });
 });
 

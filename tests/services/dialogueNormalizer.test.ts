@@ -74,5 +74,42 @@ describe('services/dialogueNormalizer.normalizeDialogue', () => {
     expect(user?.content?.[0]).toMatchObject({ type: 'text', text: 'hi' });
     expect(user?.content?.[1]).toMatchObject({ type: 'text', text: 'there' });
   });
+
+  it('Claude Code 请求：thinking/tool_use/tool_result 正确归一化', () => {
+    const raw = {
+      model: 'deepseek-v4-flash',
+      system: [{ type: 'text', text: 'sys' }],
+      tools: [{ name: 'Edit', description: 'edit', input_schema: { type: 'object' } }],
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'hi' }] },
+        { role: 'system', content: 'tool output' },
+        {
+          role: 'assistant',
+          content: [
+            { type: 'thinking', thinking: 'plan', signature: 'sig' },
+            { type: 'tool_use', id: 'call_1', name: 'Edit', input: { x: 1 } },
+          ],
+        },
+        {
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: 'call_1', content: 'ok' }],
+        },
+      ],
+    };
+
+    const norm = normalizeDialogue(raw);
+    expect(norm?.provider).toBe('anthropic');
+
+    const assistant = norm?.messages?.[2];
+    expect(assistant?.content.some((p: any) => p.type === 'thinking')).toBe(true);
+    expect(assistant?.content.some((p: any) => p.type === 'tool_use')).toBe(true);
+
+    const toolResultUser = norm?.messages?.[3];
+    expect(toolResultUser?.content?.[0]).toMatchObject({
+      type: 'tool_result',
+      tool_use_id: 'call_1',
+      content: 'ok',
+    });
+  });
 });
 

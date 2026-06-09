@@ -29,6 +29,25 @@ export const detectSSEProvider = (events: SSEEvent[]): Provider => {
   return 'anthropic';
 };
 
+const hasAnthropicSystemBlocks = (raw: any): boolean =>
+  Array.isArray(raw.system) &&
+  raw.system.some((s: any) => s?.type === 'text' && s?.text !== undefined);
+
+const hasAnthropicContentParts = (raw: any): boolean =>
+  raw.messages.some(
+    (m: any) =>
+      Array.isArray(m?.content) &&
+      m.content.some(
+        (p: any) => p?.type === 'thinking' || p?.type === 'tool_use' || p?.type === 'tool_result'
+      )
+  );
+
+const hasAnthropicTools = (raw: any): boolean =>
+  Array.isArray(raw.tools) && raw.tools.some((t: any) => t?.input_schema !== undefined);
+
+const isAnthropicDialogue = (raw: any): boolean =>
+  hasAnthropicSystemBlocks(raw) || hasAnthropicContentParts(raw) || hasAnthropicTools(raw);
+
 export const detectDialogueProvider = (raw: any): Provider | null => {
   if (!raw || !Array.isArray(raw.messages)) return null;
 
@@ -36,22 +55,13 @@ export const detectDialogueProvider = (raw: any): Provider | null => {
     return 'openai';
   }
 
+  // Anthropic signals before OpenAI heuristics — Claude Code may inject role:system in messages
+  if (isAnthropicDialogue(raw)) {
+    return 'anthropic';
+  }
+
   if (raw.messages.some((m: any) => m?.role === 'tool' || m?.role === 'system' || Array.isArray(m?.tool_calls))) {
     return 'openai';
-  }
-
-  if (Array.isArray(raw.system) && raw.system.some((s: any) => s?.type === 'text' && s?.text !== undefined)) {
-    return 'anthropic';
-  }
-
-  if (
-    raw.messages.some(
-      (m: any) =>
-        Array.isArray(m?.content) &&
-        m.content.some((p: any) => p?.type === 'thinking' || p?.type === 'tool_use' || p?.type === 'tool_result')
-    )
-  ) {
-    return 'anthropic';
   }
 
   if (Array.isArray(raw.system) && raw.system.some((s: any) => s?.role === 'system')) {
